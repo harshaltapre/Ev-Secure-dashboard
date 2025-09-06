@@ -191,7 +191,7 @@ export default function LoginPage() {
                       <Input
                         id="phoneNumber"
                         type="tel"
-                        placeholder="(555) 123-4567"
+                        
                         value={formatPhoneDisplay(phoneNumber)}
                         onChange={(e) => handlePhoneChange(e.target.value)}
                         className="pl-10 bg-white/50 border-gray-200 focus:border-purple-400 focus:ring-purple-400"

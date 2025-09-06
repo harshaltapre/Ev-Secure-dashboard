@@ -1,9 +1,16 @@
 /* 
  * Author: Harshal Tapre
- 
+ * Date: 28/08/2025
+ * Description:
+ * This project is a framework for monitoring and protecting EV charging stations using ESP32-S3.
+ * It includes:
+ * - Current sensor integration
+ * - Voltage sensor integration
+ * - SD card ML model loading
+ * - WiFi connectivity
+ * - Real-time anomaly detection
  * EV-Sora ESP32-S3 Charging Protection Framework
- * Real-time anomaly detection for EV charging stations
- * 
+ 
  * Features:
  * - ACS712 Current Sensor Integration
  * - ZMPT101B Voltage Sensor Integration
