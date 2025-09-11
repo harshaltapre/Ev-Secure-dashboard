@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -49,29 +49,103 @@ export default function SettingsPage() {
     updateFrequency: "5",
   })
 
-  const generateApiKey = (stationId: string) => {
-    const newKey = `vsr_${stationId.toLowerCase()}_${Math.random().toString(36).substring(2, 15)}`
-    setApiKeys((prev) => ({
-      ...prev,
-      [stationId]: {
-        ...prev[stationId],
-        key: newKey,
-        status: "active",
-        lastUsed: new Date().toISOString(),
-      },
-    }))
+  // Load existing API keys from backend
+  useEffect(() => {
+    const loadApiKeys = async () => {
+      try {
+        const response = await fetch('/api/keys')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.keys) {
+            const updatedKeys = { ...initialApiKeys }
+            data.keys.forEach((keyData: any) => {
+              const stationId = keyData.stationId
+              if (updatedKeys[stationId]) {
+                updatedKeys[stationId] = {
+                  ...updatedKeys[stationId],
+                  key: keyData.fullKey,
+                  status: keyData.status,
+                  lastUsed: keyData.lastUsed,
+                }
+              }
+            })
+            setApiKeys(updatedKeys)
+          }
+        }
+      } catch (error) {
+        console.error('Error loading API keys:', error)
+      }
+    }
+
+    loadApiKeys()
+  }, [])
+
+  const generateApiKey = async (stationId: string) => {
+    try {
+      const response = await fetch('/api/keys', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ stationId }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to generate API key')
+      }
+
+      const data = await response.json()
+      
+      setApiKeys((prev) => ({
+        ...prev,
+        [stationId]: {
+          ...prev[stationId],
+          key: data.key,
+          status: "active",
+          lastUsed: new Date().toISOString(),
+        },
+      }))
+
+      // Show success message
+      alert(`API key generated successfully for ${stationId}`)
+    } catch (error) {
+      console.error('Error generating API key:', error)
+      alert('Failed to generate API key. Please try again.')
+    }
   }
 
-  const revokeApiKey = (stationId: string) => {
-    setApiKeys((prev) => ({
-      ...prev,
-      [stationId]: {
-        ...prev[stationId],
-        key: "",
-        status: "inactive",
-        lastUsed: null,
-      },
-    }))
+  const revokeApiKey = async (stationId: string) => {
+    const currentKey = apiKeys[stationId]?.key
+    if (!currentKey) return
+
+    try {
+      const response = await fetch('/api/keys', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ key: currentKey }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to revoke API key')
+      }
+
+      setApiKeys((prev) => ({
+        ...prev,
+        [stationId]: {
+          ...prev[stationId],
+          key: "",
+          status: "inactive",
+          lastUsed: null,
+        },
+      }))
+
+      alert(`API key revoked successfully for ${stationId}`)
+    } catch (error) {
+      console.error('Error revoking API key:', error)
+      alert('Failed to revoke API key. Please try again.')
+    }
   }
 
   const copyToClipboard = (text: string) => {

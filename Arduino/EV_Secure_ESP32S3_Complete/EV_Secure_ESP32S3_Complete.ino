@@ -313,7 +313,7 @@ void sendToDashboard() {
     return;
   }
   
-  // Create JSON payload
+  // Create JSON payload (match Next.js schema: device_id, sensor_data)
   DynamicJsonDocument doc(1024);
   doc["device_id"] = DEVICE_ID;
   doc["session_id"] = sessionId;
@@ -321,15 +321,15 @@ void sendToDashboard() {
   doc["state"] = currentState;
   doc["is_charging"] = isCharging;
   doc["threat_detected"] = threatDetected;
-  
+
   // Sensor data
-  JsonObject sensors = doc.createNestedObject("sensors");
+  JsonObject sensors = doc.createNestedObject("sensor_data");
   sensors["current"] = currentSensorData.current;
   sensors["voltage"] = currentSensorData.voltage;
   sensors["power"] = currentSensorData.power;
   sensors["frequency"] = currentSensorData.frequency;
   sensors["temperature"] = currentSensorData.temperature;
-  
+
   // ML prediction
   JsonObject ml = doc.createNestedObject("ml_prediction");
   ml["prediction"] = mlResult.prediction;
@@ -339,8 +339,14 @@ void sendToDashboard() {
   String jsonString;
   serializeJson(doc, jsonString);
   
+  // Ensure API manager is initialized and server reachable
+  static bool apiInitDone = false;
+  if (!apiInitDone) {
+    apiInitDone = APIManager::init();
+  }
+
   // Send to dashboard
-  if (APIManager::sendData(jsonString)) {
+  if (apiInitDone && APIManager::sendData(jsonString)) {
     Serial.println("Data sent to dashboard successfully");
   } else {
     Serial.println("Failed to send data to dashboard");

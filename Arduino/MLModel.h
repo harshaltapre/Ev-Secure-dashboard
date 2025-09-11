@@ -48,6 +48,8 @@ private:
   static void _initializeWeights();
   static float _sigmoid(float x);
   static float _relu(float x);
+  // Hybrid rule + lightweight NN scoring helpers
+  static float _ruleBasedThreatScore(const float* f);
 };
 
 // Placeholder model data (replace with actual TensorFlow Lite model)
@@ -98,43 +100,40 @@ bool MLModel::runInference(float* inputFeatures, MLPrediction* result) {
     return false;
   }
   
-  // Placeholder inference implementation
-  // In a real implementation, this would use TensorFlow Lite Micro
-  
-  // Simple neural network simulation
+  // Hybrid: rule-based score + lightweight NN prior (deterministic fallback)
+  float ruleScore = _ruleBasedThreatScore(inputFeatures); // 0..1
+
+  // Lightweight deterministic NN prior using fixed weights for stability
   float hidden1[8] = {0};
   float hidden2[4] = {0};
   float output = 0;
-  
-  // First hidden layer (6 inputs -> 8 neurons)
   for (int i = 0; i < 8; i++) {
-    hidden1[i] = 0;
+    float sum = 0;
     for (int j = 0; j < INPUT_FEATURES; j++) {
-      hidden1[i] += inputFeatures[j] * _modelWeights[i * INPUT_FEATURES + j];
+      sum += inputFeatures[j] * (0.05f * (float)((i + 1) * (j + 2)));
     }
-    hidden1[i] = _relu(hidden1[i]);
+    hidden1[i] = _relu(sum * 0.1f);
   }
-  
-  // Second hidden layer (8 inputs -> 4 neurons)
   for (int i = 0; i < 4; i++) {
-    hidden2[i] = 0;
+    float sum = 0;
     for (int j = 0; j < 8; j++) {
-      hidden2[i] += hidden1[j] * _modelWeights[48 + i * 8 + j];
+      sum += hidden1[j] * (0.03f * (float)((i + 2) * (j + 1)));
     }
-    hidden2[i] = _relu(hidden2[i]);
+    hidden2[i] = _relu(sum * 0.1f);
   }
-  
-  // Output layer (4 inputs -> 1 output)
   for (int i = 0; i < 4; i++) {
-    output += hidden2[i] * _modelWeights[80 + i];
+    output += hidden2[i] * (0.1f * (float)(i + 1));
   }
   output = _sigmoid(output);
-  
-  // Set result
-  result->prediction = output;
-  result->confidence = 0.85; // Placeholder confidence
+
+  // Blend rule-based with NN prior; emphasize rules (safety first)
+  float blended = 0.7f * ruleScore + 0.3f * output;
+
+  result->prediction = blended;
+  // Confidence increases when rules and NN agree
+  float agreement = 1.0f - fabsf(ruleScore - output);
+  result->confidence = 0.6f + 0.4f * agreement;
   result->timestamp = millis();
-  
   return true;
 }
 
@@ -175,6 +174,37 @@ float MLModel::_sigmoid(float x) {
 float MLModel::_relu(float x) {
   // ReLU activation function
   return max(0.0, x);
+}
+
+// Rule-based threat scoring using configured thresholds
+// f[0]=current, f[1]=voltage, f[2]=power, f[3]=frequency, f[4]=temperature, f[5]=state
+float MLModel::_ruleBasedThreatScore(const float* f) {
+  if (!f) return 0.0f;
+  float currentA = f[0];
+  float voltageV = f[1];
+  float powerW = f[2];
+  float freqHz = f[3];
+  float tempC = f[4];
+
+  float score = 0.0f;
+
+  // Current overlimit
+  if (fabsf(currentA) > CURRENT_MAX_THRESHOLD) score += 0.35f;
+
+  // Voltage out-of-range
+  if (voltageV < VOLTAGE_MIN_THRESHOLD || voltageV > VOLTAGE_MAX_THRESHOLD) score += 0.35f;
+
+  // Frequency deviation
+  if (fabsf(freqHz - FREQUENCY_NOMINAL) > FREQUENCY_TOLERANCE) score += 0.15f;
+
+  // Over-temperature
+  if (tempC > TEMP_MAX_THRESHOLD) score += 0.15f;
+
+  // Power sanity (optional soft check)
+  if (powerW > (CURRENT_MAX_THRESHOLD * VOLTAGE_MAX_THRESHOLD)) score += 0.10f;
+
+  if (score > 1.0f) score = 1.0f;
+  return score;
 }
 
 // Real TensorFlow Lite Micro implementation template
