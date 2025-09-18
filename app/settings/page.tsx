@@ -23,6 +23,7 @@ import {
   Eye,
   EyeOff,
   Trash2,
+  FileText,
 } from "lucide-react"
 import { SharedNavigation } from "@/components/shared-navigation"
 

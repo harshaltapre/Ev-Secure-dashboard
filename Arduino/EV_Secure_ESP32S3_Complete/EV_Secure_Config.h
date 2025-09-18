@@ -36,7 +36,7 @@
 // DASHBOARD API CONFIGURATION
 // ============================================================================
 #define DASHBOARD_URL "http://localhost:3000"  // Base server URL; endpoints appended internally
-#define API_KEY "vsr_st001_8ulzcb5e5jd"                              // Replace with your API key
+#define API_KEY "vsr_st001_abc123def456"       // Replace with your station-specific API key from dashboard
 #define API_TIMEOUT_MS 10000
 #define DATA_TRANSMISSION_INTERVAL 2000  // Send data every 2 seconds
 #define COMMAND_CHECK_INTERVAL 1000      // Check for commands every 1 second
