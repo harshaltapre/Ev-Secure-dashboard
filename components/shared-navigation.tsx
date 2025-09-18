@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Zap, Menu, Home, Database, FileText, Map, User, Settings, Shield, Bell, X, LogOut } from "lucide-react"
+import { Zap, Menu, Home, Database, FileText, Map, User, Settings, Shield, Bell, X, LogOut, Code } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 interface NavigationProps {
@@ -20,6 +20,7 @@ export function SharedNavigation({ currentPage = "" }: NavigationProps) {
     { icon: Map, label: "Map View", href: "/map", id: "map" },
     { icon: FileText, label: "Reports", href: "/reports", id: "reports" },
     { icon: Database, label: "Analytics", href: "/analytics", id: "analytics" },
+    { icon: Code, label: "Code Generator", href: "/code-generator", id: "code-generator" },
     { icon: Settings, label: "Settings", href: "/settings", id: "settings" },
     { icon: User, label: "Profile", href: "/profile", id: "profile" },
   ]
