@@ -27,7 +27,19 @@ import {
 } from "lucide-react"
 import { SharedNavigation } from "@/components/shared-navigation"
 
-const initialApiKeys = {
+// Type definitions
+interface ApiKeyData {
+  key: string
+  status: "active" | "inactive"
+  lastUsed: string | null
+  station: string
+}
+
+type StationId = "ST001" | "ST002" | "ST003" | "ST004"
+type ApiKeysState = Record<StationId, ApiKeyData>
+type ShowApiKeysState = Record<string, boolean>
+
+const initialApiKeys: ApiKeysState = {
   ST001: { key: "", status: "inactive", lastUsed: null, station: "Downtown Plaza" },
   ST002: { key: "", status: "inactive", lastUsed: null, station: "Mall Parking" },
   ST003: { key: "", status: "inactive", lastUsed: null, station: "Airport Terminal" },
@@ -35,8 +47,8 @@ const initialApiKeys = {
 }
 
 export default function SettingsPage() {
-  const [apiKeys, setApiKeys] = useState(initialApiKeys)
-  const [showApiKeys, setShowApiKeys] = useState({})
+  const [apiKeys, setApiKeys] = useState<ApiKeysState>(initialApiKeys)
+  const [showApiKeys, setShowApiKeys] = useState<ShowApiKeysState>({})
   const [notifications, setNotifications] = useState({
     threats: true,
     maintenance: true,
@@ -59,9 +71,9 @@ export default function SettingsPage() {
           const data = await response.json()
           if (data.success && data.keys) {
             const updatedKeys = { ...initialApiKeys }
-            data.keys.forEach((keyData: any) => {
+            data.keys.forEach((keyData: { stationId: StationId; fullKey: string; status: "active" | "inactive"; lastUsed: string | null }) => {
               const stationId = keyData.stationId
-              if (updatedKeys[stationId]) {
+              if (stationId in updatedKeys) {
                 updatedKeys[stationId] = {
                   ...updatedKeys[stationId],
                   key: keyData.fullKey,
@@ -99,10 +111,10 @@ export default function SettingsPage() {
       
       setApiKeys((prev) => ({
         ...prev,
-        [stationId]: {
-          ...prev[stationId],
+        [stationId as StationId]: {
+          ...prev[stationId as StationId],
           key: data.key,
-          status: "active",
+          status: "active" as const,
           lastUsed: new Date().toISOString(),
         },
       }))
@@ -115,7 +127,7 @@ export default function SettingsPage() {
     }
   }
 
-  const revokeApiKey = async (stationId: string) => {
+  const revokeApiKey = async (stationId: StationId) => {
     const currentKey = apiKeys[stationId]?.key
     if (!currentKey) return
 
@@ -137,7 +149,7 @@ export default function SettingsPage() {
         [stationId]: {
           ...prev[stationId],
           key: "",
-          status: "inactive",
+          status: "inactive" as const,
           lastUsed: null,
         },
       }))
@@ -283,7 +295,7 @@ export default function SettingsPage() {
                         ) : (
                           <Button
                             variant="destructive"
-                            onClick={() => revokeApiKey(stationId)}
+                            onClick={() => revokeApiKey(stationId as StationId)}
                             className="bg-gradient-to-r from-red-500 to-orange-500"
                           >
                             <Trash2 className="w-4 h-4 mr-2" />

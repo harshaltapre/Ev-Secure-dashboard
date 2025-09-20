@@ -20,7 +20,23 @@ import {
 } from "lucide-react"
 import { SharedNavigation } from "@/components/shared-navigation"
 
-const stations = {
+// Type definitions
+interface StationConfig {
+  name: string
+  location: string
+}
+
+interface ApiKeyData {
+  key: string
+  status: "active" | "inactive"
+  lastUsed: string | null
+}
+
+type StationId = "ST001" | "ST002" | "ST003" | "ST004"
+type StationsState = Record<StationId, StationConfig>
+type ApiKeysState = Record<string, ApiKeyData>
+
+const stations: StationsState = {
   ST001: { name: "Downtown Plaza", location: "123 Main St, City Center" },
   ST002: { name: "Mall Parking", location: "456 Commerce Ave, Mall Plaza" },
   ST003: { name: "Airport Terminal", location: "789 Airport Rd, Terminal B" },
@@ -28,8 +44,8 @@ const stations = {
 }
 
 export default function CodeGeneratorPage() {
-  const [selectedStation, setSelectedStation] = useState("")
-  const [apiKeys, setApiKeys] = useState({})
+  const [selectedStation, setSelectedStation] = useState<string>("")
+  const [apiKeys, setApiKeys] = useState<ApiKeysState>({})
   const [generatedCode, setGeneratedCode] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [copySuccess, setCopySuccess] = useState(false)
@@ -42,8 +58,8 @@ export default function CodeGeneratorPage() {
         if (response.ok) {
           const data = await response.json()
           if (data.success && data.keys) {
-            const keysMap = {}
-            data.keys.forEach((keyData) => {
+            const keysMap: ApiKeysState = {}
+            data.keys.forEach((keyData: { stationId: string; fullKey: string; status: "active" | "inactive"; lastUsed: string | null }) => {
               keysMap[keyData.stationId] = {
                 key: keyData.fullKey,
                 status: keyData.status,
@@ -61,7 +77,7 @@ export default function CodeGeneratorPage() {
     loadApiKeys()
   }, [])
 
-  const generateArduinoCode = (stationId, apiKey) => {
+  const generateArduinoCode = (stationId: StationId, apiKey: string) => {
     const station = stations[stationId]
     
     return `/*
@@ -316,7 +332,7 @@ enum SystemState {
       return
     }
 
-    const stationApiKey = apiKeys[selectedStation]
+    const stationApiKey = apiKeys[selectedStation as StationId]
     if (!stationApiKey || !stationApiKey.key) {
       alert("No API key found for this station. Please generate an API key first.")
       return
@@ -326,7 +342,7 @@ enum SystemState {
     
     // Simulate code generation delay
     setTimeout(() => {
-      const code = generateArduinoCode(selectedStation, stationApiKey.key)
+      const code = generateArduinoCode(selectedStation as StationId, stationApiKey.key)
       setGeneratedCode(code)
       setIsGenerating(false)
     }, 1000)
@@ -461,10 +477,10 @@ enum SystemState {
             {selectedStation && (
               <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
                 <h4 className="font-semibold text-blue-800 mb-2">
-                  {stations[selectedStation].name} ({selectedStation})
+                  {stations[selectedStation as StationId].name} ({selectedStation})
                 </h4>
                 <p className="text-sm text-blue-700 mb-3">
-                  📍 {stations[selectedStation].location}
+                  📍 {stations[selectedStation as StationId].location}
                 </p>
                 
                 {apiKeys[selectedStation] ? (
